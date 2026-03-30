@@ -527,3 +527,265 @@ Lambda fires → MSCK REPAIR TABLE → Glue updated → Athena queryable ✅
 | `index.ts` | Single export point for all files |
 | `infra.ts` | Instantiates the stack with your config |
 | `schemas/*.json/yaml` | Your table definitions — only files you touch |
+
+
+
+
+
+Here is the complete integration guide for your team.
+
+Overview
+Your existing repo
+        │
+        ├── infra/
+        │     ├── bin/
+        │     │   ├── app.ts        ← already exists
+        │     │   └── infra.ts      ← already exists
+        │     └── lib/
+        │           ├── ATHENA/     ← already exists
+        │           ├── DMS/        ← already exists
+        │           ├── GLUE/       ← ADD our files here
+        │           └── ...
+        └── schemas/                ← ADD this folder
+
+Step 1 — Copy framework files into existing repo
+Copy only the lib/GLUE/ files — nothing else:
+bash# From your PSU_DATALAKE folder into your existing repo
+cp -r infra/lib/GLUE/PSUDLGlueTypes.ts              /path/to/existing-repo/infra/lib/GLUE/
+cp -r infra/lib/GLUE/PSUDLGlueSchemaLoader.ts        /path/to/existing-repo/infra/lib/GLUE/
+cp -r infra/lib/GLUE/PSUDLGlueTableConstruct.ts      /path/to/existing-repo/infra/lib/GLUE/
+cp -r infra/lib/GLUE/PSUDLGluePartitionRefresher.ts  /path/to/existing-repo/infra/lib/GLUE/
+cp -r infra/lib/GLUE/PSUDLGlueTableFramework.ts      /path/to/existing-repo/infra/lib/GLUE/
+cp -r infra/lib/GLUE/PSUDLGlueTableStack.ts          /path/to/existing-repo/infra/lib/GLUE/
+cp -r infra/lib/GLUE/PSUDLGlueSchemaValidator.ts     /path/to/existing-repo/infra/lib/GLUE/
+cp -r infra/lib/GLUE/index.ts                        /path/to/existing-repo/infra/lib/GLUE/
+
+Step 2 — Copy schema files
+bash# Create schemas folder in existing repo
+mkdir -p /path/to/existing-repo/infra/schemas
+
+# Copy your schema files
+cp infra/schemas/bank_transactions.json          /path/to/existing-repo/infra/schemas/
+cp infra/schemas/customer_risk_events.yaml       /path/to/existing-repo/infra/schemas/
+cp infra/schemas/bank_transactions_avro.json     /path/to/existing-repo/infra/schemas/
+
+Step 3 — Install required npm packages
+In your existing repo check package.json — add these if not already there:
+bashcd /path/to/existing-repo
+
+npm install js-yaml
+npm install --save-dev @types/js-yaml
+Your package.json dependencies should include:
+json{
+  "dependencies": {
+    "aws-cdk-lib": "^2.100.0",
+    "constructs":  "^10.0.0",
+    "js-yaml":     "^4.1.0"      ← add this if missing
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9"   ← add this if missing
+  }
+}
+
+Step 4 — Add scripts to existing package.json
+Open your existing package.json and add these scripts:
+json{
+  "scripts": {
+    "validate-schemas":       "ts-node infra/lib/GLUE/PSUDLGlueSchemaValidator.ts",
+    "validate-schemas:skip":  "SKIP_VALIDATION=true ts-node infra/lib/GLUE/PSUDLGlueSchemaValidator.ts"
+  }
+}
+
+Step 5 — Update existing infra.ts
+Open your existing infra/bin/infra.ts and add the Glue stack alongside your existing stacks:
+typescript// ── existing imports — DO NOT CHANGE THESE ───────────────
+import { ExistingStack1 } from "../lib/ATHENA/ExistingStack1";
+import { ExistingStack2 } from "../lib/DMS/ExistingStack2";
+// ... all your existing imports stay exactly as they are
+
+// ── ADD THIS — new Glue framework import ─────────────────
+import * as path from "path";
+import { PSUDLGlueTableStack } from "../lib/GLUE";
+
+// ── existing stack instantiations — DO NOT CHANGE ────────
+new ExistingStack1(app, "ExistingStack1", { ... });
+new ExistingStack2(app, "ExistingStack2", { ... });
+// ... all your existing stacks stay exactly as they are
+
+// ── ADD THIS — new Glue stack ────────────────────────────
+new PSUDLGlueTableStack(app, `PSUDLGlueStack-${config.environment}`, {
+  env: {
+    account: config.account,
+    region:  config.region,
+  },
+  environment:        config.environment,
+  schemaDirectory:    path.join(__dirname, "../schemas"),
+  existingBucketName: config.dataLakeBucketName,   // if bucket exists
+  // bucketName: config.dataLakeBucketName,         // if bucket needs creating
+});
+
+Step 6 — Update config files
+Add dataLakeBucketName to your existing config files:
+infra/config/dev.json
+json{
+  "environment":        "dev",
+  "account":            "454830470924",
+  "region":             "us-east-1",
+  "dataLakeBucketName": "psudl-data-lake-dev-454830470924"
+}
+infra/config/staging.json
+json{
+  "environment":        "staging",
+  "account":            "454830470924",
+  "region":             "us-east-1",
+  "dataLakeBucketName": "psudl-data-lake-staging-454830470924"
+}
+infra/config/prod.json
+json{
+  "environment":        "prod",
+  "account":            "454830470924",
+  "region":             "us-east-1",
+  "dataLakeBucketName": "psudl-data-lake-prod-454830470924"
+}
+
+Step 7 — Add new table schemas
+For every new Glue table your team needs, create a schema file in infra/schemas/:
+yaml# infra/schemas/my_new_table.yaml
+database: finance_raw
+tableName: my_new_table
+format: CSV
+
+columns:
+  - name: id
+    type: string
+  - name: created_at
+    type: timestamp
+  - name: amount
+    type: double
+
+partitions:
+  columns:
+    - name: year
+      type: string
+    - name: month
+      type: string
+    - name: day
+      type: string
+  s3Pattern: "year={year}/month={month}/day={day}"
+
+s3Location:
+  bucketName: psudl-data-lake-dev-454830470924
+  prefix: raw/my_new_table/
+
+refresh:
+  strategy: event
+
+tags:
+  Team: data-engineering
+  Domain: finance
+
+Step 8 — Validate and deploy
+bash# Validate all schemas
+npm run validate-schemas
+
+# Preview changes
+npx cdk diff
+
+# Deploy
+npx cdk deploy --require-approval never
+```
+
+---
+
+## Step 9 — Team workflow going forward
+
+This is how your team uses the framework day to day:
+```
+Developer wants to add a new table
+              │
+              ▼
+Create a new .json or .yaml in infra/schemas/
+              │
+              ▼
+Run npm run validate-schemas
+              │
+              ▼
+Raise a Pull Request
+              │
+              ▼
+Team reviews the schema file (not TypeScript code)
+              │
+              ▼
+PR merged → CI/CD runs cdk deploy
+              │
+              ▼
+New Glue table live on AWS ✅
+
+What your team needs to know
+PersonWhat they doData engineerCreates .json or .yaml schema files onlyCloud engineerMaintains the framework TypeScript filesEveryoneRuns npm run validate-schemas before raising PR
+
+Rules for the team
+1. Never hardcode table definitions in TypeScript
+typescript// ❌ Wrong — do not do this
+new glue.CfnTable(this, "MyTable", { ... });
+
+// ✅ Right — add a schema file instead
+// infra/schemas/my_table.json
+2. Always validate before deploying
+bashnpm run validate-schemas   # must show all PASS before deploying
+```
+
+**3. One schema file per table**
+```
+infra/schemas/
+  bank_transactions.json          ← one file per table
+  customer_risk_events.yaml
+  my_new_table.json
+```
+
+**4. Always use Hive partition format on S3**
+```
+# ✅ Correct
+s3://bucket/raw/my_table/year=2024/month=03/day=15/file.csv
+
+# ❌ Wrong — partitions never detected
+s3://bucket/raw/my_table/2024/03/15/file.csv
+5. Never commit .env or AWS credentials
+bash# .gitignore should always have
+.env
+*.credentials
+
+CI/CD integration (optional)
+If your team uses GitHub Actions add this to your pipeline:
+yaml# .github/workflows/deploy.yml
+name: Deploy Glue Framework
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/schemas/**'
+      - 'infra/lib/GLUE/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate schemas
+        run: npm run validate-schemas
+
+      - name: Deploy
+        run: npx cdk deploy --require-approval never
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    us-east-1
+This means every time someone adds or changes a schema file and merges to main — it automatically deploys to AWS.
+
+Summary — 9 steps
+StepAction1Copy lib/GLUE/ files into existing repo2Copy schema files into infra/schemas/3Install js-yaml npm package4Add validate scripts to package.json5Add PSUDLGlueTableStack to existing infra.ts6Add dataLakeBucketName to config files7Create schema files for new tables8Validate and deploy9Team follows schema-driven workflow going forward

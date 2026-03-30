@@ -1,0 +1,4 @@
+transaction_id,account_number,customer_id,transaction_date,value_date,transaction_type,amount,currency,balance_after,channel,merchant_code,merchant_name,reference_number,status,is_flagged
+TXN-2024-101,****4521,CUST-10001,2024-03-16 09:10:00,2024-03-16,DEBIT,500.00,USD,4250.00,POS,5411,WHOLE FOODS,REF-9900001,COMPLETED,false
+TXN-2024-102,****7832,CUST-10002,2024-03-16 10:20:00,2024-03-16,CREDIT,2000.00,USD,8800.00,ONLINE,,SALARY DEPOSIT,REF-9900002,COMPLETED,false
+TXN-2024-103,****2290,CUST-10003,2024-03-16 11:30:00,2024-03-16,DEBIT,300.00,USD,31700.00,MOBILE,5812,UBER EATS,REF-9900003,COMPLETED,false

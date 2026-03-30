@@ -1,0 +1,50 @@
+{
+  "database": "finance_raw",
+  "tableName": "bank_transactions_avro",
+  "description": "Bank transactions in AVRO binary format. Same schema as bank_transactions CSV table.",
+  "format": "AVRO",
+  "columns": [
+    { "name": "transaction_id",   "type": "string",    "comment": "Unique transaction reference number" },
+    { "name": "account_number",   "type": "string",    "comment": "Masked account number" },
+    { "name": "customer_id",      "type": "string",    "comment": "Internal customer identifier" },
+    { "name": "transaction_date", "type": "timestamp", "comment": "UTC timestamp of transaction" },
+    { "name": "value_date",       "type": "date",      "comment": "Settlement date" },
+    { "name": "transaction_type", "type": "string",    "comment": "DEBIT | CREDIT | REVERSAL | FEE" },
+    { "name": "amount",           "type": "double",    "comment": "Transaction amount" },
+    { "name": "currency",         "type": "string",    "comment": "ISO 4217 currency code" },
+    { "name": "balance_after",    "type": "double",    "comment": "Account balance after transaction" },
+    { "name": "channel",          "type": "string",    "comment": "ATM | ONLINE | BRANCH | MOBILE | POS" },
+    { "name": "merchant_code",    "type": "string",    "comment": "MCC code" },
+    { "name": "merchant_name",    "type": "string",    "comment": "Merchant or counterparty name" },
+    { "name": "reference_number", "type": "string",    "comment": "External reference number" },
+    { "name": "status",           "type": "string",    "comment": "COMPLETED | PENDING | FAILED | REVERSED" },
+    { "name": "is_flagged",       "type": "boolean",   "comment": "Flagged by fraud detection engine" }
+  ],
+  "partitions": {
+    "columns": [
+      { "name": "year",  "type": "string" },
+      { "name": "month", "type": "string" },
+      { "name": "day",   "type": "string" }
+    ],
+    "s3Pattern": "year={year}/month={month}/day={day}"
+  },
+  "s3Location": {
+    "bucketName": "psudl-data-lake-dev-454830470924",
+    "prefix": "raw/bank_transactions_avro/"
+  },
+  "serdeOverride": {
+    "serializationLibrary": "org.apache.hadoop.hive.serde2.avro.AvroSerDe",
+    "parameters": {
+      "avro.schema.literal": "{\"type\":\"record\",\"name\":\"bank_transactions\",\"namespace\":\"finance_raw\",\"fields\":[{\"name\":\"transaction_id\",\"type\":\"string\"},{\"name\":\"account_number\",\"type\":\"string\"},{\"name\":\"customer_id\",\"type\":\"string\"},{\"name\":\"transaction_date\",\"type\":\"string\"},{\"name\":\"value_date\",\"type\":\"string\"},{\"name\":\"transaction_type\",\"type\":\"string\"},{\"name\":\"amount\",\"type\":\"double\"},{\"name\":\"currency\",\"type\":\"string\"},{\"name\":\"balance_after\",\"type\":\"double\"},{\"name\":\"channel\",\"type\":\"string\"},{\"name\":\"merchant_code\",\"type\":[\"null\",\"string\"],\"default\":null},{\"name\":\"merchant_name\",\"type\":[\"null\",\"string\"],\"default\":null},{\"name\":\"reference_number\",\"type\":\"string\"},{\"name\":\"status\",\"type\":\"string\"},{\"name\":\"is_flagged\",\"type\":\"boolean\"}]}"
+    }
+  },
+  "refresh": {
+    "strategy": "event"
+  },
+  "tags": {
+    "Team": "data-engineering",
+    "Domain": "finance",
+    "DataClassification": "confidential",
+    "CostCenter": "data-platform"
+  }
+}

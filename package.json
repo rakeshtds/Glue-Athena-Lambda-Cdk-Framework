@@ -1,0 +1,32 @@
+{
+  "name": "psu-datalake-glue-framework",
+  "version": "1.0.0",
+  "description": "Schema-driven CDK framework for PSU Glue tables with automatic S3 partition refresh",
+  "main": "lib/GLUE/index.js",
+  "scripts": {
+    "build":                 "tsc",
+    "watch":                 "tsc -w",
+    "cdk":                   "cdk",
+    "synth":                 "cdk synth",
+    "deploy":                "cdk deploy --require-approval never",
+    "deploy:dev":            "ENVIRONMENT=dev cdk deploy --require-approval never",
+    "deploy:staging":        "ENVIRONMENT=staging cdk deploy --require-approval never",
+    "deploy:prod":           "ENVIRONMENT=prod cdk deploy --require-approval never",
+    "diff":                  "cdk diff",
+    "destroy":               "cdk destroy",
+    "validate-schemas":      "ts-node infra/lib/GLUE/PSUDLGlueSchemaValidator.ts",
+    "validate-schemas:skip": "SKIP_VALIDATION=true ts-node infra/lib/GLUE/PSUDLGlueSchemaValidator.ts"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.100.0",
+    "constructs":  "^10.0.0",
+    "js-yaml":     "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node":    "^20.0.0",
+    "aws-cdk":        "^2.100.0",
+    "ts-node":        "^10.9.1",
+    "typescript":     "^5.2.2"
+  }
+}

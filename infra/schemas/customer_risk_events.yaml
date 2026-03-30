@@ -1,0 +1,90 @@
+database: finance_raw
+tableName: customer_risk_events
+description: Real-time customer risk and compliance events emitted as JSON by the risk scoring engine.
+format: JSON
+
+columns:
+  - name: event_id
+    type: string
+    comment: UUID v4 unique identifier for this risk event
+  - name: event_type
+    type: string
+    comment: LOGIN_ANOMALY | LARGE_TRANSFER | KYC_CHANGE | AML_ALERT | SANCTION_HIT | DEVICE_CHANGE
+  - name: customer_id
+    type: string
+    comment: Internal customer identifier
+  - name: account_number
+    type: string
+    comment: Affected account number (masked)
+  - name: event_ts
+    type: timestamp
+    comment: UTC timestamp when event was generated
+  - name: risk_score
+    type: double
+    comment: Composite risk score 0.0 to 1.0
+  - name: risk_band
+    type: string
+    comment: LOW | MEDIUM | HIGH | CRITICAL
+  - name: triggered_rules
+    type: "array<string>"
+    comment: List of rule IDs that fired for this event
+  - name: geo_country
+    type: string
+    comment: ISO 3166-1 alpha-2 country code
+  - name: geo_city
+    type: string
+    comment: City of origin
+  - name: ip_address
+    type: string
+    comment: Hashed originating IP address
+  - name: device_fingerprint
+    type: string
+    comment: Hashed device fingerprint
+  - name: action_taken
+    type: string
+    comment: NONE | ALERT_RAISED | ACCOUNT_FROZEN | CASE_CREATED | TRANSACTION_BLOCKED
+  - name: case_id
+    type: string
+    comment: Compliance case ID if action_taken is CASE_CREATED
+  - name: reviewed_by
+    type: string
+    comment: Analyst ID if manually reviewed
+  - name: resolution_ts
+    type: timestamp
+    comment: UTC timestamp when event was resolved
+  - name: raw_payload
+    type: string
+    comment: Full original JSON payload for audit trail
+
+partitions:
+  columns:
+    - name: year
+      type: string
+    - name: month
+      type: string
+    - name: day
+      type: string
+    - name: hour
+      type: string
+  s3Pattern: "year={year}/month={month}/day={day}/hour={hour}"
+
+s3Location:
+  bucketName: psudl-data-lake-dev-454830470924
+  prefix: raw/customer_risk_events/
+
+serdeOverride:
+  serializationLibrary: org.openx.data.jsonserde.JsonSerDe
+  parameters:
+    ignore.malformed.json: "TRUE"
+    dots.in.keys: "FALSE"
+    case.insensitive: "TRUE"
+
+refresh:
+  strategy: event
+
+tags:
+  Team: data-engineering
+  Domain: finance
+  DataClassification: restricted
+  CostCenter: data-platform
+  ComplianceScope: "AML-KYC-GDPR"

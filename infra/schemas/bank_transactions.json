@@ -1,0 +1,54 @@
+{
+  "database": "finance_raw",
+  "tableName": "bank_transactions",
+  "description": "Daily bank transaction records ingested as CSV from core banking system. Partitioned by year/month/day.",
+  "format": "CSV",
+  "columns": [
+    { "name": "transaction_id",   "type": "string",    "comment": "Unique transaction reference number" },
+    { "name": "account_number",   "type": "string",    "comment": "Masked account number" },
+    { "name": "customer_id",      "type": "string",    "comment": "Internal customer identifier" },
+    { "name": "transaction_date", "type": "timestamp", "comment": "UTC timestamp of transaction" },
+    { "name": "value_date",       "type": "date",      "comment": "Settlement date" },
+    { "name": "transaction_type", "type": "string",    "comment": "DEBIT | CREDIT | REVERSAL | FEE" },
+    { "name": "amount",           "type": "double",    "comment": "Transaction amount in source currency" },
+    { "name": "currency",         "type": "string",    "comment": "ISO 4217 currency code" },
+    { "name": "balance_after",    "type": "double",    "comment": "Account balance after transaction" },
+    { "name": "channel",          "type": "string",    "comment": "ATM | ONLINE | BRANCH | MOBILE | POS" },
+    { "name": "merchant_code",    "type": "string",    "comment": "MCC code for card transactions" },
+    { "name": "merchant_name",    "type": "string",    "comment": "Merchant or counterparty name" },
+    { "name": "reference_number", "type": "string",    "comment": "External reference number" },
+    { "name": "status",           "type": "string",    "comment": "COMPLETED | PENDING | FAILED | REVERSED" },
+    { "name": "is_flagged",       "type": "boolean",   "comment": "Flagged by fraud detection engine" }
+  ],
+  "partitions": {
+    "columns": [
+      { "name": "year",  "type": "string" },
+      { "name": "month", "type": "string" },
+      { "name": "day",   "type": "string" }
+    ],
+    "s3Pattern": "year={year}/month={month}/day={day}"
+  },
+  "s3Location": {
+    "bucketName": "psudl-data-lake-dev-454830470924",
+    "prefix": "raw/bank_transactions/"
+  },
+  "serdeOverride": {
+    "serializationLibrary": "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
+    "parameters": {
+      "field.delim":            ",",
+      "line.delim":             "\n",
+      "serialization.format":   ",",
+      "skip.header.line.count": "1"
+    }
+  },
+  "refresh": {
+    "strategy": "both",
+    "scheduleCron": "0 * * * ? *"
+  },
+  "tags": {
+    "Team": "data-engineering",
+    "Domain": "finance",
+    "DataClassification": "confidential",
+    "CostCenter": "data-platform"
+  }
+}

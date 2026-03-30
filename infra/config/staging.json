@@ -1,0 +1,6 @@
+{
+  "environment":        "staging",
+  "account":            "454830470924",
+  "region":             "us-east-1",
+  "dataLakeBucketName": "psudl-data-lake-staging-454830470924"
+}

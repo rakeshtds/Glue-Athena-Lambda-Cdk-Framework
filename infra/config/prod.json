@@ -1,0 +1,6 @@
+{
+  "environment":        "prod",
+  "account":            "454830470924",
+  "region":             "us-east-1",
+  "dataLakeBucketName": "psudl-data-lake-prod-454830470924"
+}
